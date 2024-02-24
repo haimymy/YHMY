@@ -48,18 +48,7 @@ export default function ProjectDetails() {
     }, [projectId]);
 
     // Function to convert statut values to status strings
-    const getStatusString = (statut) => {
-        switch (statut) {
-            case 0:
-                return 'à faire';
-            case 1:
-                return 'en cours';
-            case 2:
-                return 'terminé';
-            default:
-                return 'Unknown';
-        }
-    };
+
 
     const getSalarieNameForTask = (taskId) => {
         const salarieTache = salarieTacheData.salarie_tache.find(entry => entry.tache_id === taskId);
@@ -129,10 +118,32 @@ export default function ProjectDetails() {
     const [project, setProject] = useState(null);
     const [error, setError] = useState('');
     const projectId = router.query.projectId;
+    const [selectedUserId, setSelectedUserId] = useState('');
+    const [users, setUsers] = useState([]);
 
     if (router.isFallback) {
         return <div>Loading...</div>;
     }
+
+    useEffect(() => {
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/api/users/liste');
+                if (response.ok) {
+                    const usersData = await response.json();
+                    console.log(usersData);
+                    setUsers(usersData);
+                } else {
+                    setError('Error fetching users');
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                setError('An error occurred while fetching users');
+            }
+        }
+
+        fetchUsers();
+    }, []);
 
     useEffect(() => {
         async function fetchProject() {
@@ -158,32 +169,86 @@ export default function ProjectDetails() {
     return (
         <div>
             <h1>Project Details</h1>
-            {project && (
-                <>
-                    <h2>{project.title}</h2>
-                    <p>Description: {project.description}</p>
-                    <p>Manager: {project.manager.name}</p>
-                    <h3>Tasks:</h3>
-                    <ul>
-                        {project.tasks.map((task) => (
-                            <li key={task.id}>
-                                <strong>{task.title}</strong>
-                                <p>Description: {task.description}</p>
-                                <p>Status: {task.status}</p>
-                                <p>Assignees:</p>
-                                <ul>
-                                    {task.assignees.map((assignee) => (
-                                        <li key={assignee.user.name}>{assignee.user.name}</li>
-                                    ))}
-                                </ul>
-                            </li>
-                        ))}
-                    </ul>
-                </>
-            )}
-            {error && <div>Error: {error}</div>}
-        </div>
-    );
+            <h3>Ajouter une tache</h3>
+            <div>
+                <label>Nom de la tâche:</label>
+                <input type="text" onChange={(e) => setTaskName(e.target.value)}
+                />
+            </div>
+            <div>
+                <label>Description de la tâche:</label>
+                <textarea onChange={(e) => setTaskDescription(e.target.value)}></textarea>
+            </div>
+            <div>
+                <label>Délégué à:</label>
+                <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                    <option value="" selected={1} hidden={1} disabled={1}>Choisir un salarié</option>
+                    {users.map(user => (
+                        <option key={user.name} value={user.name}>{user.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div>
+                <label>Droit d'accèés:</label>
+                <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                >
+                    <option value="" selected={1} hidden={1} disabled={1}>Choisir un droit</option>
+                    <option value="l">Lecture seule</option>
+                    <option value="le">Lecture et écriture</option>
+
+
+                </select>
+            </div>
+            <button>Ajouter</button>
+
+    {
+        project && (
+            <>
+                <h2>{project.title}</h2>
+                <p>Description: {project.description}</p>
+                <p>Manager: {project.manager.name}</p>
+                <h3>Tasks:</h3>
+                <ul>
+                    {project.tasks.map((task) => (
+                        <li key={task.id}>
+                            <strong>{task.title}</strong>
+                            <p>Description: {task.description}</p>
+                            <p>Status: {getStatusString(task.status)}</p>
+                            <p>Assignees:</p>
+                            <ul>
+                                {task.assignees.map((assignee) => (
+                                    <li key={assignee.user.name}>{assignee.user.name}</li>
+                                ))}
+                            </ul>
+                        </li>
+                    ))}
+                </ul>
+            </>
+        )
+    }
+    {
+        error && <div>Error: {error}</div>
+    }
+</div>
+)
+    ;
+}
+
+function getStatusString(status) {
+    const statut = parseInt(status);
+    switch (statut) {
+        case 0:
+            return 'à faire';
+        case 1:
+            return 'en cours';
+        case 2:
+            return 'terminé';
+        default:
+            return 'Unknown';
+    }
 }
 
 
