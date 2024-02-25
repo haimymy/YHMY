@@ -22,10 +22,7 @@ export default function Login() {
 
             if (response.ok) {
                 const data = await response.json();
-                // Redirect to the user's dashboard page
-                console.log(data.user.name);
-                router.push(`/users/${data.user.name}`);
-
+                await router.push(`/users/${data.user.name}`);
             } else {
                 setError('Invalid username or password');
             }

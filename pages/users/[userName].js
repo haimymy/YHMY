@@ -1,72 +1,4 @@
-/*import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import participationData from '../../data/participation.json';
-
-const SalarieId = ({ projects }) => {
-    const router = useRouter();
-    const { salarieId } = router.query;
-    const [userProjects, setUserProjects] = useState([]);
-
-    useEffect(() => {
-        if (Array.isArray(projects)) {
-            setUserProjects(projects);
-        }
-    }, [projects]);
-
-
-    const renderProjects = () => {
-        if (userProjects.length === 0) {
-            return <p>No projects found for this salarie.</p>;
-        }
-
-        return (
-            <ul>
-                {userProjects.map(project => (
-                    <li key={project.project_id}>
-                        <Link href={`/projects/${project.project_id}`}>
-                            {project.project_id}
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-        );
-    };
-
-    return (
-        <div>
-            <h1>Espace personnel</h1>
-            <h2>Ajout d'un projet </h2>
-
-            <h2>Mes Projets</h2>
-            {renderProjects()}
-        </div>
-    );
-};
-
-export async function getServerSideProps({ params }) {
-    const salarieId = params.salarieId;
-    // Filter participation data to get projects associated with the salarieId
-    const projects = participationData.participation
-        .filter(participation => participation.salarie_id === salarieId)
-        .map(participation => {
-            return {
-                project_id: participation.project_id,
-                // You can include additional project details here if needed
-            };
-        });
-
-    return {
-        props: {
-            projects: projects
-        }
-    };
-}
-
-export default SalarieId;*/
-
-// pages/add-project.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 export default function AddProject() {
@@ -74,8 +6,30 @@ export default function AddProject() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [error, setError] = useState('');
-    const managerName = router.query.userName;
-    //console.log(managerName);
+    const { userName } = router.query;
+    const [userProjects, setUserProjects] = useState([]);
+
+    const fetchUserProjects = async () => {
+        try {
+            if (userName) {
+                const response = await fetch(`/api/users/${userName}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserProjects(data.projects);
+                } else {
+                    setError('Failed to fetch user projects');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user projects:', error);
+            setError('An error occurred while fetching user projects');
+        }
+    };
+
+    useEffect(() => {
+        fetchUserProjects();
+    }, [userName]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -85,12 +39,13 @@ export default function AddProject() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ title, description,managerName}),
+                body: JSON.stringify({ title, description, userName }),
             });
 
             if (response.ok) {
-                const data = await response.json();
-                router.push(`/projects/${data.project.id}`);
+                await fetchUserProjects();
+                setTitle('');
+                setDescription('');
             } else {
                 setError('Error adding project');
             }
@@ -123,13 +78,24 @@ export default function AddProject() {
                     <label>Manager:</label>
                     <input
                         type="text"
-                        value={managerName}
+                        value={userName || ''}
                         disabled
                     />
                 </div>
-                {error && <div style={{color: 'red'}}>{error}</div>}
+                {error && <div style={{ color: 'red' }}>{error}</div>}
                 <button type="submit">Add Project</button>
             </form>
+
+            <h3>Mes projets :</h3>
+            <h5>Y compris les projets que l'utilisateur a créés ou auxquels il'a été assigné des tâches </h5>
+            <ul>
+                {userProjects.map((project) => (
+                    <li key={project.id}>
+                        <strong>{project.title}</strong>
+                        <p>Description: {project.description}</p>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

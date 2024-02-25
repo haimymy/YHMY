@@ -169,41 +169,7 @@ export default function ProjectDetails() {
     return (
         <div>
             <h1>Project Details</h1>
-            <h3>Ajouter une tache</h3>
-            <div>
-                <label>Nom de la tâche:</label>
-                <input type="text" onChange={(e) => setTaskName(e.target.value)}
-                />
-            </div>
-            <div>
-                <label>Description de la tâche:</label>
-                <textarea onChange={(e) => setTaskDescription(e.target.value)}></textarea>
-            </div>
-            <div>
-                <label>Délégué à:</label>
-                <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
-                    <option value="" selected={1} hidden={1} disabled={1}>Choisir un salarié</option>
-                    {users.map(user => (
-                        <option key={user.name} value={user.name}>{user.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            <div>
-                <label>Droit d'accèés:</label>
-                <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                >
-                    <option value="" selected={1} hidden={1} disabled={1}>Choisir un droit</option>
-                    <option value="l">Lecture seule</option>
-                    <option value="le">Lecture et écriture</option>
-
-
-                </select>
-            </div>
-            <button>Ajouter</button>
-
+            <TaskForm users={users} projectId={projectId} />
     {
         project && (
             <>
@@ -235,6 +201,87 @@ export default function ProjectDetails() {
 </div>
 )
     ;
+}
+
+function TaskForm({ users,projectId }) {
+    const [taskName, setTaskName] = useState('');
+    const [taskDescription, setTaskDescription] = useState('');
+    const [selectedUserId, setSelectedUserId] = useState('');
+    const [selectedEffort, setSelectedEffort] = useState('');
+    const [error, setError] = useState('');
+
+    const fibonacci = [0, 1];
+    for (let i = 2; i <= 6; i++) {
+        fibonacci[i] = fibonacci[i - 1] + fibonacci[i - 2];
+    }
+    const handleEffortChange = (e) => {
+        setSelectedEffort(e.target.value);
+    };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            const response = await fetch('/api/taches/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    taskName,
+                    taskDescription,
+                    selectedUserId,
+                    selectedEffort,
+                    projectId,
+                    loggedInUser
+                }),
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                setError('Error creating task');
+            }
+        } catch (error) {
+            console.error('Error creating task:', error);
+            setError('An error occurred while creating task');
+        }
+    };
+
+    return (
+        <div>
+            <h3>Ajouter une tache</h3>
+            <form onSubmit={handleSubmit}>
+                <div>
+                    <label>Nom de la tâche:</label>
+                    <input type="text" value={taskName} onChange={(e) => setTaskName(e.target.value)}/>
+                </div>
+                <div>
+                    <label>Description de la tâche:</label>
+                    <textarea value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)}></textarea>
+                </div>
+                <div>
+                    <label>Effort:</label>
+                    <select value={selectedEffort} onChange={handleEffortChange}>
+                        <option value="" disabled>Select effort</option>
+                        {fibonacci.map((number, index) => (
+                            <option key={index} value={number}>{number}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label>Délégué à:</label>
+                    <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                        <option value="" disabled={true}>Choisir un salarié</option>
+                        {users.map(user => (
+                            <option key={user.name} value={user.name}>{user.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <button type="submit">Créer la tâche</button>
+                {error && <div style={{color: 'red'}}>{error}</div>}
+            </form>
+        </div>
+    );
 }
 
 function getStatusString(status) {

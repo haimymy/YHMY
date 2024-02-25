@@ -10,14 +10,14 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { title, description, managerName } = req.body;
-
+    const { title, description, userName } = req.body;
+console.log(title, description, userName);
     try {
         const project = await prisma.project.create({
             data: {
                 title,
                 description,
-                managerName
+                managerName: userName
             },
         });
 
